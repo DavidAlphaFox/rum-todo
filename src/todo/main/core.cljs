@@ -1,6 +1,7 @@
 (ns todo.main.core
   (:require
    [rum.core :as rum]
+   ["react-sortablejs" :refer [ReactSortable]]
    ["@tanstack/react-query" :refer [QueryClient QueryClientProvider useQuery]]))
 
 (defonce app-state (atom {:text "Hello world!"}))
@@ -8,36 +9,51 @@
 
 (defn- get-react-query-info []
   (->
-    (js/fetch "https://api.github.com/repos/tannerlinsley/react-query")
-    (.then #(.json %))))
+   (js/fetch "https://api.github.com/repos/tannerlinsley/react-query")
+   (.then #(.json %))))
+
+(rum/defc sort-list []
+  (let [[state set-state!]
+        (rum/use-state [{:id 1 :name "shrek"}
+                        {:id 2 :name "fiona"}])]
+    (.log js/console state)
+    (rum/adapt-class ReactSortable
+                     {:class "handle"
+                       :list state
+                       :setList set-state!}
+                     (map (fn [item]
+                            [:div
+                             {:key (:id item)}
+                              [:i.handle.fas.fa-arrows-alt]
+                              [:span (:name item)]]) state))))
 
 (rum/defc hello [data]
   (let [{:keys [isLoading error data]}
         (->
-          {:queryKey  ["react-query"]
-            :queryFn get-react-query-info}
-          (clj->js)
-          (useQuery)
-          (js->clj :keywordize-keys true))]
+         {:queryKey  ["react-query"]
+          :queryFn get-react-query-info}
+         (clj->js)
+         (useQuery)
+         (js->clj :keywordize-keys true))]
     [:div
-      [:h1 (:title data)]
-    (cond
-      isLoading
-      [:div
-       [:span "Loading ...."]]
-      error
-      [:div
-       [:span (->> error
-                   (.-message)
-                   (str "An error has occurred"))]]
-      :else
-      [:div
+     [:h1 (:title data)]
+     (sort-list)
+     (cond
+       isLoading
+       [:div
+        [:span "Loading ...."]]
+       error
+       [:div
+        [:span (->> error
+                    (.-message)
+                    (str "An error has occurred"))]]
+       :else
+       [:div
         [:h2 (:name data)]
         [:p (:description data)]
         [:strong (->> data
-                   :subscribers_count
-                   (str "👀 " ))]]
-      )]))
+                      :subscribers_count
+                      (str "👀 "))]])]))
 
 ;;(rum/defc app []
 ;;    (js/React.createElement
