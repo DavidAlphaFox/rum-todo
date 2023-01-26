@@ -1,6 +1,7 @@
 (ns todo.main.core
   (:require
    [rum.core :as rum]
+   ["react-select/async" :default AsyncSelect]
    ["react-sortablejs" :refer [ReactSortable]]
    ["@tanstack/react-query" :refer [QueryClient QueryClientProvider useQuery]]))
 
@@ -11,6 +12,17 @@
   (->
    (js/fetch "https://api.github.com/repos/tannerlinsley/react-query")
    (.then #(.json %))))
+
+(defn- load-options [q callback]
+  (callback (clj->js [{ :label "value"
+                       :options
+                       [{:label "a" :value 1}]}])))
+
+(rum/defc select-list []
+  (rum/adapt-class AsyncSelect
+    {:cacheOptions true
+     :defaultOptions true
+     :loadOptions load-options}))
 
 (rum/defc sort-list []
   (let [[state set-state!]
@@ -37,7 +49,8 @@
          (js->clj :keywordize-keys true))]
     [:div
      [:h1 (:title data)]
-     (sort-list)
+      (sort-list)
+      (select-list)
      (cond
        isLoading
        [:div
